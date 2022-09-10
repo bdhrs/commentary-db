@@ -1,0 +1,17 @@
+descriptors
+
+DNa
+1. p nikaya
+2. head book
+3. head subsubhead
+4. head chapter
+5. p subhead
+
+JAa
+1. p nikaya
+2. p book
+3. p title (tatiyo)
+4. p chapter
+5. p title
+6. p bodytext [301]
+

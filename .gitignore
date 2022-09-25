@@ -1,7 +1,7 @@
 notebook.ipynb
 .vscode/launch.json
 .vscode/settings.json
-__pycache__/functions.cpython-310.pyc
+__pycache__/
 log/log.tsv
-output/comm-def.csv
-output/search_results.html
+output/
+

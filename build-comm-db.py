@@ -1,16 +1,14 @@
 #!/usr/bin/env python3.10
 
-
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
 from functions import get_nikaya_headings_div, get_headings_no_div, transliterate_xml, get_bold_strings
-from timeis import timeis, yellow, line, tic, toc
+from timeis import timeis, green, white, yellow, line, tic, toc
 
 print(f"{timeis()} {line}")
 print(f"{timeis()} {yellow}building database of commentarial defintions")
 print(f"{timeis()} {line}")
-
 
 cst_dir = "../Cst4/Xml/"
 output_dir = "output/"
@@ -18,6 +16,14 @@ log_file = "log/log.tsv"
 log = open (log_file, "a")
 
 file_list = {
+
+	"vin01m.mul.xml":"VIN",
+    "vin02m1.mul.xml": "VIN",
+    "vin02m2.mul.xml": "VIN",
+    "vin02m3.mul.xml": "VIN",
+    "vin02m4.mul.xml": "VIN",
+
+
 	"s0515m.mul.xml": "NIDD1",
 	"s0516m.mul.xml": "NIDD2",
 	"s0517m.mul.xml": "PM",
@@ -89,15 +95,15 @@ file_list = {
 	"vin01t1.tik.xml": "VINt",
     "vin01t2.tik.xml": "VINt",
     "vin02t.tik.xml": "VINt",
-    "vin04t.nrf.xml": "VINt",
-    "vin05t.nrf.xml": "VINt",
-    "vin06t.nrf.xml": "VINt",
-    "vin07t.nrf.xml": "VINt",
-    "vin08t.nrf.xml": "VINt",
-    "vin09t.nrf.xml": "VINt",
-    "vin10t.nrf.xml": "VINt",
-    "vin11t.nrf.xml": "VINt",
-    "vin12t.nrf.xml": "VINt",
+    "vin04t.nrf.xml": "KVa",
+    "vin05t.nrf.xml": "VSa",
+    "vin06t.nrf.xml": "VBt",
+    "vin07t.nrf.xml": "VMVt",
+    "vin08t.nrf.xml": "VAt",
+    "vin09t.nrf.xml": "KVt",
+    "vin10t.nrf.xml": "VVUt",
+    "vin11t.nrf.xml": "VVt",
+    "vin12t.nrf.xml": "PYt",
     "vin13t.nrf.xml": "VINt",
 
 	# sutta sub-commentaries
@@ -146,6 +152,7 @@ file_list = {
 }
 
 useless = [" ", "  ", "   ", ".", ". ", ". ", " .", " . ", ",", " ,", " , "]
+useless_endings = ["ti.", "'ti.", "nti.", "'nti.", "."]
 
 def make_db():
 	"""extract commentary definitions from xml"""
@@ -180,6 +187,18 @@ def make_db():
 		for pb in pbs:
 			pb.decompose()
 
+		# remove all the notes
+		notes = soup.find_all("note")
+		for note in notes:
+			note.decompose()
+
+		# remove all the hi parunum dot tags
+		his = soup.find_all("hi", rend=["paranum", "dot"])
+		for hi in his:
+			hi.unwrap()
+
+		# if the element and the next element is bold, join them
+
 		# grab the number of bolds
 		bold_count1 = len(soup.find_all("hi", rend="bold"))
 		
@@ -191,34 +210,36 @@ def make_db():
 			nikaya = soup.find_all("p", rend="nikaya")[0].string
 			book = soup.find_all("head", rend="book")[0].string
 
-			divs = soup.find_all("div", type=["sutta", "vagga", "chapter", "samyutta"])
+			divs = soup.find_all("div", type=["sutta", "vagga", "chapter", "samyutta", "kanda", "khandaka"])
+
+			# no real divs in anguttara ṭīkā
+			ant = ["s0401t.tik.xml", "s0402t.tik.xml", "s0403t.tik.xml", "s0404t.tik.xml"]
+			if file_name in ant:
+				divs = soup.find_all("div", type=["book"])
 
 			for div in divs:
-
 				paras = div.find_all("p")
 
 				for para in paras:
-
 					title, subhead = get_nikaya_headings_div(
 						file_name, div, para, subhead)
-					
 					bolds = para.find_all("hi", rend=["bold"])
 
 					for bold in bolds:
 						if bold.next_sibling is not None:
-
-							bold, bold_e, bold_comp = get_bold_strings(
+							bold, bold_e, bold_comp, bold_n = get_bold_strings(
 								bold, useless)
 							
-							bold = re.sub("""<hi rend\\="bold">""", "", str(bold))
-							bold = re.sub("""<\\/hi>""", "", str(bold))
-
-							if f"{bold}{bold_e}" == bold_comp:
+							# only write substantial examples
+							bold_comp_clean = re.sub("\\<b\\>|\\</b\\>", "", bold_comp)
+							if f"{bold}{bold_e}" == bold_comp_clean:
 								no_meaning_count +=1
-
-							f1.write(
-								f"{file_name}\t{ref_code}\t{nikaya}\t{book}\t{title}\t{subhead}\t{bold}\t{bold_e}\t{bold_comp}\n")
-							bold_count2 += 1
+							elif bold_n in useless_endings:
+								no_meaning_count += 1
+								continue
+							else:
+								f1.write(f"{file_name}\t{ref_code}\t{nikaya}\t{book}\t{title}\t{subhead}\t{bold}\t{bold_e}\t{bold_comp}\n")
+								bold_count2 += 1
 
 			print(f"{bold_count1}\t{bold_count2}\t{no_meaning_count}")
 			log.write(f"{bold_count1}\t{bold_count2}\t{no_meaning_count}\n")
@@ -233,22 +254,24 @@ def make_db():
 			paras = soup.find_all("p")
 
 			for para in paras:
-
 				nikaya, book, title, subhead = get_headings_no_div(para, file_name, nikaya, book, title, subhead)
-
 				bolds = para.find_all("hi", rend="bold")
 
 				for bold in bolds:
 					if bold.next_sibling is not None:
-						bold, bold_e, bold_comp  = get_bold_strings(
+						bold, bold_e, bold_comp, bold_n  = get_bold_strings(
 							bold, useless)
 
+						# only write substantial examples
+						bold_comp_clean = re.sub("\\<b\\>|\\</b\\>", "", bold_comp)
 						if f"{bold}{bold_e}" == bold_comp:
 							no_meaning_count += 1
-
-						f1.write(
-							f"{file_name}\t{ref_code}\t{nikaya}\t{book}\t{title}\t{subhead}\t{bold}\t{bold_e}\t{bold_comp}\n")
-						bold_count2 += 1
+						elif bold_n in useless_endings:
+							no_meaning_count += 1
+							continue
+						else:
+							f1.write(f"{file_name}\t{ref_code}\t{nikaya}\t{book}\t{title}\t{subhead}\t{bold}\t{bold_e}\t{bold_comp}\n")
+							bold_count2 += 1
 	
 			print(f"{bold_count1}\t{bold_count2}\t{no_meaning_count}")
 			log.write(f"{bold_count1}\t{bold_count2}\t{no_meaning_count}\n")
@@ -258,8 +281,19 @@ def make_db():
 	f1.close()
 	log.close()
 
+def convert_csv_to_json():
+	"""convert to json for use externally"""
+	
+	print(f"{timeis()} {green}converting csv to json", end=" ")
+	df = pd.read_csv("output/comm-def.csv", sep="\t")
+	df.fillna("", inplace=True)
+	df.to_json("html/commdef.json", force_ascii=False,
+			orient="records", indent=5)
+
+	print(f"{timeis()} {white}ok")
 
 if __name__ == "__main__":
 	tic()
 	make_db()
+	convert_csv_to_json()
 	toc()

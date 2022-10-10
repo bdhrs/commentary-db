@@ -1,5 +1,7 @@
-from aksharamukha import transliterate
 import re
+
+from aksharamukha import transliterate
+from clean_text import text_cleaner
 
 
 def get_nikaya_headings_div(file_name, div, para, subhead):
@@ -67,25 +69,29 @@ def get_headings_no_div(para, file_name, nikaya, book, title, subhead):
 		if para["rend"] == "nikaya": # some subheads tagged nikaya
 			subhead = para.string
 	
+	if file_name == "vin10t.nrf.xml":
+		book = "vinayavinicchayo uttaravinicchayo"
+	
 	if file_name == "abh03a.att.xml":
 		if para["rend"] == "chapter":
 			book = para.string
+
+	if file_name == "abh05t.nrf.xml":
+		book = "pañcapakaraṇa-anuṭīkā"
 	
 	if file_name == "e0810n.nrf.xml":
 		if para["rend"] == "subsubhead":
 			title = para.string
 
-	
-
 	aññā = ["e0101n.mul.xml", "e0102n.mul.xml", "e0103n.att.xml", "e0104n.att.xml", "e0809n.nrf.xml", "e0810n.nrf.xml"]
 	if file_name in aññā:
 		nikaya = "aññā"
 	
-	vin_t = ["vin04t.nrf.xml", "vin08t.nrf.xml", "vin09t.nrf.xml", "vin10t.nrf.xml", "vin13t.nrf.xml"]
+	vin_t = ["vin04t.nrf.xml", "vin08t.nrf.xml", "vin09t.nrf.xml", "vin10t.nrf.xml", "vin11t.nrf.xml", "vin13t.nrf.xml"]
 	if file_name in vin_t:
 		nikaya = "vinayapiṭake"
 
-	abh_t = ["abh06t.nrf.xml", "abh07t.nrf.xml", "abh08t.nrf.xml"] 
+	abh_t = ["abh06t.nrf.xml", "abh07t.nrf.xml", "abh08t.nrf.xml", "abh09t.nrf.xml"]
 	if file_name in abh_t:
 		nikaya = "abhidhammapiṭake"
 		if para["rend"] == "nikaya":
@@ -118,7 +124,7 @@ def get_bold_strings(bold, useless):
 			bold_n = f"{bold_n}{next_sib}"
 		except:
 			pass
-
+	
 	bold_n = re.sub("(.*\\.).*$", "\\1", bold_n)
 	bold_n = re.sub("(\\. .+?\\. .+?\\. .+?\\.).+", "\\1", bold_n)
 
@@ -126,10 +132,20 @@ def get_bold_strings(bold, useless):
 	bold_e = re.sub(" .+$", "", str(bold_e))
 
 	bold_comp = f"{bold_p}{bold}{bold_n}"
-	bold_comp = re.sub("""<hi rend\\="bold">""", "<b>", bold_comp)
+	bold_comp = re.sub("""\\<hi rend\\="bold">""", "<b>", bold_comp)
 	bold_comp = re.sub("""<\\/hi>""", "</b>", bold_comp)
+	
 
-	return bold, bold_e, bold_comp 
+
+	bold = re.sub("""<hi rend\\="bold">""", "", str(bold))
+	bold = re.sub("""<\\/hi>""", "", str(bold))
+
+	# remove unneccessary punctuation
+	bold = text_cleaner(bold)
+	bold_e = text_cleaner(bold_e)
+	bold_comp = text_cleaner(bold_comp)
+
+	return bold, bold_e, bold_comp, bold_n
 
 
 def transliterate_xml(xml):

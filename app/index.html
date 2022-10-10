@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Pāḷi Definitions</title>
+	<link rel="stylesheet" type="" href="index.css">
+</head>
+
+<body>
+	<div class="fixed-header">
+		<h2 class="title">Pāḷi Definitions Search</h3>
+			<h4 class="subtitle" id="subtitle">Search for bold defined terms in Vinaya, late Khuddaka Nikāya,
+				Aṭṭhakathā, Ṭīkā and Aññā.</h4>
+			<div class="searchbar">
+				Search for definitions of the term
+				<input id="search-box1" type="text" onkeypress="this.style.width =  (this.value.length + 3) + 'ch'">
+				which contain
+				<input id="search-box2" type="text" onkeypress="this.style.width = (this.value.length + 3) + 'ch'">
+				within them.
+			</div>
+			<div class=search-buttons>
+				<button class="search" id="starts-with-button">starts with</button>
+				<button class="search" id="contains-button">contains</button>
+				<button class="search" id="fuzzy-button">fuzzy</button>
+				<button class="search" id="ends-with-button">ends with</button>
+				<button class="search" id="clear-button">clear</button>
+			</div>
+	</div>
+	<div class="main">
+		<div class="message" id="message">
+			Use <b>plain text</b> or <b>regular expressions</b> for searching.
+		</div>
+
+		<table id="search-results"></table>
+		<div class="footer" id="footer">
+			<a href="https://digitalpalidictionary.github.io/" target="_blank">Built for DPD</a>
+		</div>
+		<script type="module" src="index.js"></script>
+</body>
+
+
+</html>

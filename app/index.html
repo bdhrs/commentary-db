@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 
+<!-- This uses Pāḷi script converter developed for tipitka.app. Permission obtained from the developer, Janaka, to use it on 2022-10-16 -->
+
+
 <head>
 	<meta charset="UTF-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -12,11 +15,12 @@
 <body>
 	<div class="fixed-header">
 		<h2 class="title">Pāḷi Definitions Search</h3>
+		<button class="script-selector" id="select-script-button">R</button>	
 			<h4 class="subtitle" id="subtitle">Search for bold defined terms in Vinaya, late Khuddaka Nikāya,
 				Aṭṭhakathā, Ṭīkā and Aññā.</h4>
 			<div class="searchbar">
 				Search for definitions of the term
-				<input id="search-box1" type="text" onkeypress="this.style.width =  (this.value.length + 3) + 'ch'">
+				<input id="search-box1" type="text" onkeypress="this.style.width =  (this.value.length + 3) + 'ch'"">
 				which contain
 				<input id="search-box2" type="text" onkeypress="this.style.width = (this.value.length + 3) + 'ch'">
 				within them.
@@ -31,13 +35,13 @@
 	</div>
 	<div class="main">
 		<div class="message" id="message">
-			Use <b>plain text</b> or <b>regular expressions</b> for searching.
+			Use <b>Velthuis</b>, <b>Unicode diacritics</b> or <b>regular expressions</b> for searching.
 		</div>
-
 		<table id="search-results"></table>
 		<div class="footer" id="footer">
 			<a href="https://digitalpalidictionary.github.io/" target="_blank">Built for DPD</a>
 		</div>
+		<script type="module" src="pali-script.mjs"></script>
 		<script type="module" src="index.js"></script>
 </body>
 

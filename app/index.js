@@ -1,6 +1,6 @@
 let c = console.log
 
-import db from './commdef.json' assert {type: 'json'}
+import { db } from './commdef.js'
 
 // elements
 
@@ -21,13 +21,53 @@ let regexChar = RegExp("[^A-Za-zāīūṅñṇṃṭḍḷ ]")
 
 subTitle.innerHTML = `Search <b>${dbLength}</b> bold defined terms in Vinaya, late Khuddaka Nikāya, Aṭṭhakathā, Ṭīkā and Aññā`
 
-// listeners
+/////////// listeners
+
+// script selector
+
+const scriptSelectorButton = document.getElementById("select-script-button")
+let selectedScript = "Roman"
+scriptSelectorButton.addEventListener("click", function () {
+	if (selectedScript == "Roman") {
+		selectedScript = "Sinhala"
+		scriptSelectorButton.innerHTML = "සි"
+		searchMessage.innerHTML = "දැන් <b>සිංහලෙන්</b> හොයනවා"
+	} else {
+		selectedScript = "Roman"
+		scriptSelectorButton.innerHTML = "R"
+		searchMessage.innerHTML = "now searching in <b>Roman</b>"
+	}
+})
+
+// text to unicode
+
+searchBox1.addEventListener("keyup", function () {
+	let textInput = searchBox1.value
+	textInput = uniCoder(textInput)
+	searchBox1.value = textInput
+})
+searchBox2.addEventListener("keyup", function () {
+	let textInput = searchBox2.value
+	textInput = uniCoder(textInput)
+	searchBox2.value = textInput
+})
+
+function uniCoder(textInput) {
+	if (!textInput || textInput == '') return textInput
+	
+	textInput = textInput.replace(/aa/g, 'ā').replace(/ii/g, 'ī').replace(/uu/g, 'ū').replace(/\.t/g, 'ṭ').replace(/\.d/g, 'ḍ').replace(/\"n/g, 'ṅ').replace(/\'n/g, 'ṅ').replace(/\.n/g, 'ṇ').replace(/\.m/g, 'ṃ').replace(/\~n/g, 'ñ').replace(/\.l/g, 'ḷ').replace(/\.h/g, 'ḥ').toLowerCase()
+	c(textInput)
+	return textInput
+}
+
+// trigger the search
 
 searchBox1.addEventListener("keypress", function (event) {
 	if (event.key === "Enter") {
 		getValues("contains")
 	}
 })
+
 searchBox2.addEventListener("keypress", function (event) {
 	if (event.key === "Enter") {
 		getValues("contains")
@@ -37,7 +77,7 @@ searchBox2.addEventListener("keypress", function (event) {
 // button clicks
 
 containsButton.addEventListener("click", function() {
-	getValues("search")
+	getValues("contains")
 })
 startsWithButton.addEventListener("click", function () {
 	getValues("startswith")
@@ -127,9 +167,27 @@ function hoverHelp(event) {
 
 // main functions
 
+// setup transliterator
+import { TextProcessor, Script, paliScriptInfo, getScriptForCode } from './pali-script.mjs'
+
+function toRo(text) {
+	text = TextProcessor.basicConvert(text, Script.RO)
+	return text
+}
+
+function fromRo(text) {
+	text = TextProcessor.basicConvertFrom(text, Script.RO)
+	return text
+}
+
 function getValues(searchtype) {
 	let searchTerm1 = searchBox1.value
 	let searchTerm2 = searchBox2.value
+
+	if (selectedScript != "Roman") {
+		searchTerm1 = toRo(searchTerm1)
+		searchTerm2 = toRo(searchTerm2)
+	}
 
 	if (searchTerm1 == "" && searchTerm2 == "" ) {
 		searchMessage.innerHTML = "Searching for <b>emptiness</b>? Please enter <b>a letter or two</b> at least."
@@ -166,7 +224,6 @@ function getValues(searchtype) {
 		}
 	} 
 }
-
 
 function runSearch(searchTerm1, searchTerm2, flag) {
 	let counter = 1
@@ -219,36 +276,65 @@ function runSearch(searchTerm1, searchTerm2, flag) {
 		
 			if (test1 >= 0 && test2 >= 0) {
 				let commentaryHtml = item.commentary
+				let searchTerm1Translit = fromRo(searchTerm1)
+				let searchTerm2Translit = fromRo(searchTerm2)
 
-				if (flag == "contains" || flag == "startwith" || flag == "endswith") {
-					commentaryHtml = commentaryHtml.replace(searchTerm1, `<span class='hi'>${searchTerm1}</span >`)
-					commentaryHtml = commentaryHtml.replace(searchTerm2, `<span class='hi'>${searchTerm2}</span >`)
+				if (selectedScript != "Roman") {
+					commentaryHtml = nti(commentaryHtml)
+					commentaryHtml = fromRo(commentaryHtml)
+					let regex = new RegExp("<බ්>", "gm") 
+					commentaryHtml = commentaryHtml.replace(regex, "<b>")
+					regex = new RegExp("</බ්>", "gm") 
+					commentaryHtml = commentaryHtml.replace(regex, "</b>")
 				}
-
-				else if (flag == "fuzzy" || flag == "regex") {
-					let match1 = commentaryHtml.match(searchTerm1)
-					let match2 = commentaryHtml.match(searchTerm2)
-
-					if (match1[0] != "" || match2[0] != "" ) {
-						commentaryHtml = commentaryHtml.replace(match1[0], `<span class='hi'>${match1[0]}</span >`, "gm")
-						commentaryHtml = commentaryHtml.replace(match2[0], `<span class='hi'>${match2[0]}</span >`, "gm")
+				
+				if (flag == "contains" || flag == "startwith" || flag == "endswith") {
+					if (selectedScript != "Roman") {
+						commentaryHtml = commentaryHtml.replace(searchTerm1Translit, `<span class='hi'>${searchTerm1Translit}</span >`)
+						commentaryHtml = commentaryHtml.replace(searchTerm2Translit, `<span class='hi'>${searchTerm2Translit}</span >`)
+					} else {
+						commentaryHtml = commentaryHtml.replace(searchTerm1, `<span class='hi'>${searchTerm1}</span >`)
+						commentaryHtml = commentaryHtml.replace(searchTerm2, `<span class='hi'>${searchTerm2}</span >`)
 					}
 				}
 
-				htmlCompiler += `<tr><th>${counter}. <b>${item.bold}</b><span class='end'>${item.bold_end}</span></th>
-				<td>(${item.ref_code}) ${commentaryHtml}
-				</br><span class='info''>${item.nikaya} ${item.book} ${item.title} ${item.subhead}</td></tr>`
+				else if (flag == "fuzzy" || flag == "regex") {
+					let match1
+					let match2
+
+					if (selectedScript != "Roman") {
+						// cant highlight fuzzy in sinahla
+					} else {
+						match1 = commentaryHtml.match(searchTerm1)
+						match2 = commentaryHtml.match(searchTerm2)
+						if (match1[0] != "" || match2[0] != "") {
+							commentaryHtml = commentaryHtml.replace(match1[0], `<span class='hi'>${match1[0]}</span >`, "gm")
+							commentaryHtml = commentaryHtml.replace(match2[0], `<span class='hi'>${match2[0]}</span >`, "gm")
+						}
+					}
+				}
+				if (selectedScript != "Roman") {
+					let headword = nti(item.bold + item.bold_end)
+					c(headword)
+					htmlCompiler += `<tr><th>${counter}. <b>${fromRo(headword)}</b></th>
+					<td>(${fromRo(item.book)}) ${commentaryHtml}
+					</br><span class='info''>${fromRo(item.nikaya)} ${fromRo(item.book)} ${fromRo(item.title)} ${fromRo(item.subhead)}</td></tr>`
+				} else {
+					htmlCompiler += `<tr><th>${counter}. <b>${item.bold}</b><span class='end'>${item.bold_end}</span></th>
+					<td>(${item.ref_code}) ${commentaryHtml}
+					</br><span class='info''>${item.nikaya} ${item.book} ${item.title} ${item.subhead}</td></tr>`
+				}
 				counter += 1
 			}
 		}
 	}
 	htmlCompiler += "<tr><td> </td><tr><tr><td> </td><tr>"
 	searchResults.innerHTML = htmlCompiler
-	makeSearchMessage(searchTerm1, searchTerm2, counter)
+	makeSearchMessage(counter)
 }
 
 
-function makeSearchMessage(searchTerm1, searchTerm2, counter) {
+function makeSearchMessage(counter) {
 	if (counter == 1) {
 		searchMessage.innerHTML = "No results found. Try fuzzy search."
 	}
@@ -263,50 +349,70 @@ function makeSearchMessage(searchTerm1, searchTerm2, counter) {
 
 function fuzzyValues(fuzzyTerm) {
 
-	let a = RegExp("a|ā", "g")
-	fuzzyTerm = fuzzyTerm.replace(a, "(a|ā)")
+	let a = RegExp("aa|aā|āa|a|ā", "g")
+	fuzzyTerm = fuzzyTerm.replace(a, "(a|ā|aa|aā|āa)")
 
-	let i = RegExp("i|ī", "g")
-	fuzzyTerm = fuzzyTerm.replace(i, "(i|ī)")
+	let i = RegExp("ii|iī|īi|i|ī", "g")
+	fuzzyTerm = fuzzyTerm.replace(i, "(i|ī|ii|iī|īi)")
 
-	let u = RegExp("u|ū", "g")
-	fuzzyTerm = fuzzyTerm.replace(u, "(u|ū)")
+	let u = RegExp("uu|uū|ūu|u|ū", "g")
+	fuzzyTerm = fuzzyTerm.replace(u, "(u|ū|uu|uū|ūu)")
 
-	let k = RegExp("k|kk|kh|kkh", "g")
+	let k = RegExp("kkh|kk|kh|k", "g")
 	fuzzyTerm = fuzzyTerm.replace(k, "(k|kk|kh|kkh)")
 
-	let g = RegExp("g|gg|gh|ggh", "g")
-	fuzzyTerm = fuzzyTerm.replace(g, "(g|gg|gh|ggh)")
+	let g = RegExp("ggh|gg|gh|g", "g")
+	fuzzyTerm = fuzzyTerm.replace(g, "(g|gh|gg|ggh)")
 
-	let n = RegExp("ṅ|ñ|ṇ|n|ṃ", "g")
-	fuzzyTerm = fuzzyTerm.replace(n, "(ṅ|ñ|ṇ|n|ṃ)")
+	let n = RegExp("ṅṅ|ññ|ṇṇ|nn|ṅ|ñ|ṇ|n|ṃ", "g")
+	fuzzyTerm = fuzzyTerm.replace(n, "(ṅ|ñ|ṇ|n|ṅṅ|ññ|ṇṇ|nn|ṃ)")
 
-	let c = RegExp("c|cc|ch|cch", "g")
-	fuzzyTerm = fuzzyTerm.replace(c, "(c|cc|ch|cch)")
+	let c = RegExp("cch|cc|ch|c", "g")
+	fuzzyTerm = fuzzyTerm.replace(c, "(c|ch|cc|cch)")
 
-	let j = RegExp("j|j|jh|jjh", "g")
-	fuzzyTerm = fuzzyTerm.replace(j, "(j|j|jh|jjh)")
+	let j = RegExp("jjh|jj|jh|j", "g")
+	fuzzyTerm = fuzzyTerm.replace(j, "(j|jh|jj|jjh)")
 
-	let t = RegExp("t|th|tth|ṭ|ṭh|ṭṭh", "g")
-	fuzzyTerm = fuzzyTerm.replace(t, "(t|th|tth|ṭ|ṭh|ṭṭh)")
+	let t = RegExp("ṭṭh|tth|ṭṭ|tt|ṭh|th|ṭ|t", "g")
+	fuzzyTerm = fuzzyTerm.replace(t, "(ṭ|ṭh|ṭṭ|ṭṭh|t|tt|th|tth)")
 
-	let d = RegExp("d|dh|ddh|ḍ|ḍh|ḍḍh", "g")
-	fuzzyTerm = fuzzyTerm.replace(d, "(d|dh|ddh|ḍ|ḍh|ḍḍh)")
+	let d = RegExp("ḍḍh|ddh|ḍḍ|dd|ḍh|dh|ḍ|d", "g")
+	fuzzyTerm = fuzzyTerm.replace(d, "(ḍ|ḍh|ḍḍ|ḍḍh|d|dh|dd|ddh)")
 
-	let p = RegExp("p|pp|ph|pph", "g")
-	fuzzyTerm = fuzzyTerm.replace(p, "(p|pp|ph|pph)")
+	let p = RegExp("pph|pp|ph|p", "g")
+	fuzzyTerm = fuzzyTerm.replace(p, "(p|ph|pp|pph)")
 
-	let b = RegExp("b|bb|bh|bbh", "g")
-	fuzzyTerm = fuzzyTerm.replace(b, "(b|bb|bh|bbh)")
+	let b = RegExp("bbh|bb|bh|b", "g")
+	fuzzyTerm = fuzzyTerm.replace(b, "(b|bh|bb|bbh)")
 
-	let m = RegExp("m|mm", "g")
-	fuzzyTerm = fuzzyTerm.replace(m, "(m|mm)")
+	let m = RegExp("mm|m|ṃ", "g")
+	fuzzyTerm = fuzzyTerm.replace(m, "(m|mm|ṃ)")
 
-	let l = RegExp("l|ḷ", "g")
-	fuzzyTerm = fuzzyTerm.replace(l, "(l|ḷ)")
+	let y = RegExp("yy|y", "g")
+	fuzzyTerm = fuzzyTerm.replace(y, "(y|yy)")
 
+	let r = RegExp("rr|r", "g")
+	fuzzyTerm = fuzzyTerm.replace(r, "(r|rr)")
+
+	let l = RegExp("ll|l|ḷ", "g")
+	fuzzyTerm = fuzzyTerm.replace(l, "(l|ll|ḷ)")
+
+	let v = RegExp("vv|v", "g")
+	fuzzyTerm = fuzzyTerm.replace(v, "(v|vv)")
+
+	let s = RegExp("ss|s", "g")
+	fuzzyTerm = fuzzyTerm.replace(s, "(s|ss)")
+
+	console.log(fuzzyTerm)
 	return fuzzyTerm
 	}	
+
+function nti (text) {
+	// converts roman gamanan'ti to asian gamana'nti 
+	let nti = RegExp("n'ti", "g")
+	text = text.replace(nti, "'nti")
+	return text
+}
 
 
 function clearValues() {
@@ -314,6 +420,9 @@ function clearValues() {
 	searchBox2.value = ""
 	searchBox1.style.width = "50px"
 	searchBox2.style.width = "50px"
-	searchMessage.innerHTML = "Use <b>plain text</b> or <b>regular expressions</b> for searching."
+	searchMessage.innerHTML = "Use <b>Velthuis</b>, <b>Unicode diacritics</b> or <b>regular expressions</b> for searching."
 	searchResults.innerHTML = ""
 }
+
+
+

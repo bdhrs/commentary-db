@@ -8,3 +8,7 @@ output/
 app/python3 -m http.server
 app/.vscode/settings.json
 app/commdef.json
+app/commdef.js
+app/Pāḷi Definitions Search.html
+app/Pāḷi Definitions Search.html.zip
+app/translation_app.html

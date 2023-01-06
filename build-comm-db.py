@@ -287,10 +287,10 @@ def convert_csv_to_json():
 	print(f"{timeis()} {green}converting csv to json", end=" ")
 	df = pd.read_csv("output/comm-def.csv", sep="\t")
 	df.fillna("", inplace=True)
-	df.to_json("html/commdef.json", force_ascii=False,
+	df.to_json("app/commdef.json", force_ascii=False,
 			orient="records", indent=5)
 
-	print(f"{timeis()} {white}ok")
+	print(f"{white}ok")
 
 if __name__ == "__main__":
 	tic()
